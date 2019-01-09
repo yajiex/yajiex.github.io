@@ -70,7 +70,7 @@
 <link href="/css/main.css?v=5.0.1" rel="stylesheet" type="text/css">
 
 
-  <meta name="keywords" content="iOS,Performance,">
+  <meta name="keywords" content="WebAssembly,">
 
 
 
@@ -88,24 +88,21 @@
 
 
 
-<meta name="description" content="这段时间对Microsoft Edge for iOS进行了瘦身，总结如下。 TL;DR 关于Edge for iOS的一些背景 主要语言是Swift, 所以不可避免的有Swift的8MB问题 项目使用Cocoapods管理依赖，倾向于使用静态库而非动态库 因为项目原因有一些必要依赖无法避免   本文列举了在进行包优化的过程中所使用的一些方法/工具，其中效果显著的步骤加粗显示 （主要是清除多余">
-<meta name="keywords" content="iOS,Performance">
+<meta name="description" content="最近在做 WebAssembly 相关的事情，边做边总结吧 Glossary WebAssembly: WebAssembly (abbreviated Wasm) is a binary instruction format for a stack-based virtual machine. Wasm is designed as a portable target for compilati">
+<meta name="keywords" content="WebAssembly">
 <meta property="og:type" content="article">
-<meta property="og:title" content="App thinning checklist">
-<meta property="og:url" content="http://yoursite.com/2019/01/09/App-thinning-checklist/index.html">
+<meta property="og:title" content="WebAssembly">
+<meta property="og:url" content="http://yoursite.com/2019/01/09/WebAssembly/index.html">
 <meta property="og:site_name" content="非常大人">
-<meta property="og:description" content="这段时间对Microsoft Edge for iOS进行了瘦身，总结如下。 TL;DR 关于Edge for iOS的一些背景 主要语言是Swift, 所以不可避免的有Swift的8MB问题 项目使用Cocoapods管理依赖，倾向于使用静态库而非动态库 因为项目原因有一些必要依赖无法避免   本文列举了在进行包优化的过程中所使用的一些方法/工具，其中效果显著的步骤加粗显示 （主要是清除多余">
+<meta property="og:description" content="最近在做 WebAssembly 相关的事情，边做边总结吧 Glossary WebAssembly: WebAssembly (abbreviated Wasm) is a binary instruction format for a stack-based virtual machine. Wasm is designed as a portable target for compilati">
 <meta property="og:locale" content="zh-Hans">
-<meta property="og:image" content="http://yoursite.com/2019/01/09/App-thinning-checklist/type-of-size.png">
-<meta property="og:image" content="http://yoursite.com/2019/01/09/App-thinning-checklist/unzip-ipa.png">
-<meta property="og:image" content="http://yoursite.com/2019/01/09/App-thinning-checklist/link-map.png">
-<meta property="og:image" content="http://yoursite.com/2019/01/09/App-thinning-checklist/package-size-report.png">
-<meta property="og:image" content="http://yoursite.com/2019/01/09/App-thinning-checklist/package-size-report2.png">
-<meta property="og:updated_time" content="2019-01-09T06:05:27.066Z">
+<meta property="og:image" content="http://yoursite.com/2019/01/09/WebAssembly/EmscriptenToolchain.png">
+<meta property="og:image" content="http://yoursite.com/2019/01/09/WebAssembly/hello-output.png">
+<meta property="og:updated_time" content="2019-01-09T08:45:55.807Z">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:title" content="App thinning checklist">
-<meta name="twitter:description" content="这段时间对Microsoft Edge for iOS进行了瘦身，总结如下。 TL;DR 关于Edge for iOS的一些背景 主要语言是Swift, 所以不可避免的有Swift的8MB问题 项目使用Cocoapods管理依赖，倾向于使用静态库而非动态库 因为项目原因有一些必要依赖无法避免   本文列举了在进行包优化的过程中所使用的一些方法/工具，其中效果显著的步骤加粗显示 （主要是清除多余">
-<meta name="twitter:image" content="http://yoursite.com/2019/01/09/App-thinning-checklist/type-of-size.png">
+<meta name="twitter:title" content="WebAssembly">
+<meta name="twitter:description" content="最近在做 WebAssembly 相关的事情，边做边总结吧 Glossary WebAssembly: WebAssembly (abbreviated Wasm) is a binary instruction format for a stack-based virtual machine. Wasm is designed as a portable target for compilati">
+<meta name="twitter:image" content="http://yoursite.com/2019/01/09/WebAssembly/EmscriptenToolchain.png">
 
 
 
@@ -123,7 +120,7 @@
   };
 </script>
 
-  <title> App thinning checklist | 非常大人 </title>
+  <title> WebAssembly | 非常大人 </title>
 </head>
 
 <body itemscope="" itemtype="http://schema.org/WebPage" lang="zh-Hans">
@@ -272,7 +269,7 @@
             
             
               
-                App thinning checklist
+                WebAssembly
               
             
           </h1>
@@ -284,7 +281,7 @@
               <i class="fa fa-calendar-o"></i>
             </span>
             <span class="post-meta-item-text">发表于</span>
-            <time itemprop="dateCreated" datetime="2019-01-09T13:01:21+08:00" content="2019-01-09">
+            <time itemprop="dateCreated" datetime="2019-01-09T15:12:44+08:00" content="2019-01-09">
               2019-01-09
             </time>
           </span>
@@ -298,8 +295,8 @@
               <span class="post-meta-item-text">分类于</span>
               
                 <span itemprop="about" itemscope="" itemtype="https://schema.org/Thing">
-                  <a href="/categories/iOS/" itemprop="url" rel="index">
-                    <span itemprop="name">iOS</span>
+                  <a href="/categories/WebAssembly/" itemprop="url" rel="index">
+                    <span itemprop="name">WebAssembly</span>
                   </a>
                 </span>
 
@@ -314,8 +311,8 @@
             
               <span class="post-comments-count">
                 &nbsp; | &nbsp;
-                <a href="/2019/01/09/App-thinning-checklist/#comments" itemprop="discussionUrl">
-                  <span class="post-comments-count ds-thread-count" data-thread-key="2019/01/09/App-thinning-checklist/" itemprop="commentsCount"></span>
+                <a href="/2019/01/09/WebAssembly/#comments" itemprop="discussionUrl">
+                  <span class="post-comments-count ds-thread-count" data-thread-key="2019/01/09/WebAssembly/" itemprop="commentsCount"></span>
                 </a>
               </span>
             
@@ -338,81 +335,134 @@
       
 
       
-        <p>这段时间对<a href="https://itunes.apple.com/us/app/microsoft-edge/id1288723196" target="_blank" rel="noopener">Microsoft Edge for iOS</a>进行了瘦身，总结如下。</p>
-<h2 id="TL-DR"><a href="#TL-DR" class="headerlink" title="TL;DR"></a>TL;DR</h2><ol>
-<li>关于Edge for iOS的一些背景<ul>
-<li>主要语言是Swift, 所以不可避免的有Swift的8MB问题</li>
-<li>项目使用Cocoapods管理依赖，倾向于使用静态库而非动态库</li>
-<li>因为项目原因有一些必要依赖无法避免</li>
+        <p>最近在做 <a href="https://webassembly.org" target="_blank" rel="noopener">WebAssembly</a> 相关的事情，边做边总结吧</p>
+<h2 id="Glossary"><a href="#Glossary" class="headerlink" title="Glossary"></a><a href="https://kripken.github.io/emscripten-site/docs/site/glossary.html" target="_blank" rel="noopener">Glossary</a></h2><ul>
+<li><a href="https://webassembly.org" target="_blank" rel="noopener">WebAssembly</a>: WebAssembly (abbreviated Wasm) is a binary instruction format for a stack-based virtual machine. Wasm is designed as a portable target for compilation of high-level languages like C/C++/Rust, enabling deployment on the web for client and server applications.</li>
+<li><a href="https://kripken.github.io/emscripten-site/docs/introducing_emscripten/about_emscripten.html" target="_blank" rel="noopener">emscripten</a>: Emscripten is an Open Source LLVM to JavaScript compiler.</li>
+<li><a href="https://kripken.github.io/emscripten-site/docs/tools_reference/emsdk.html#emsdk" target="_blank" rel="noopener">emsdk</a>: The Emscripten SDK (emsdk) is used to perform all SDK maintenance and can install, update, add, remove and activate SDKs and tools.</li>
+<li><a href="https://kripken.github.io/emscripten-site/docs/tools_reference/emcc.html#emccdoc" target="_blank" rel="noopener">emcc</a>: The Emscripten Compiler Frontend (emcc). Emscripten’s drop-in replacement for a compiler like <code>gcc</code>.</li>
 </ul>
+<p>我做的事情是希望在Web环境中用到C++的一个库，所以套用上面的术语，就是我会用利用<code>emsdk</code>提供的环境，使用<code>emcc</code>将<code>C++</code>编译成<code>WebAssembly</code>格式, 然后在<code>Web</code>环境中使用.</p>
+<img src="/2019/01/09/WebAssembly/EmscriptenToolchain.png">
+<blockquote>
+<p>image source: <a href="https://kripken.github.io/emscripten-site/docs/introducing_emscripten/about_emscripten.html" target="_blank" rel="noopener">https://kripken.github.io/emscripten-site/docs/introducing_emscripten/about_emscripten.html</a></p>
+</blockquote>
+<h2 id="Browser-compatibility"><a href="#Browser-compatibility" class="headerlink" title="Browser compatibility"></a>Browser compatibility</h2><p>实践中我们比较关心的关于Thread的兼容性：</p>
+<table>
+<thead>
+<tr>
+<th>Tables</th>
+<th>Available version</th>
+<th>Conditions</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Google chrome</td>
+<td>Chrome 70</td>
+<td>Turn on experimental “WebAssembly threads support” flag</td>
+</tr>
+<tr>
+<td>Mozilla firefox</td>
+<td>Firefox nightly channel</td>
+<td>Turn on “javascript.options.shared_memory” flag</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p>Emscripten has support for multithreading using the new <strong>SharedArrayBuffer</strong> capability in browsers. Note that SharedArrayBuffer was <strong>disabled</strong> by default in all major browsers on 5 January, 2018 in response to <a href="https://meltdownattack.com" target="_blank" rel="noopener">Spectre</a>. <a href="https://bugs.chromium.org/p/chromium/issues/detail?id=821270" target="_blank" rel="noopener">Chrome re-enabled it in v67</a> on platforms where its site-isolation feature is enabled to protect against Spectre-style vulnerabilities.</p>
+</blockquote>
+<h2 id="Setup"><a href="#Setup" class="headerlink" title="Setup"></a>Setup</h2><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># Get the emsdk repo</span></span><br><span class="line">git <span class="built_in">clone</span> https://github.com/juj/emsdk.git</span><br><span class="line"></span><br><span class="line"><span class="comment"># Enter that directory</span></span><br><span class="line"><span class="built_in">cd</span> emsdk</span><br><span class="line"></span><br><span class="line"><span class="comment"># Activate PATH and other environment variables in the current terminal</span></span><br><span class="line"><span class="built_in">source</span> ./emsdk_env.sh</span><br></pre></td></tr></table></figure>
+<p>Sample JavaScript-C++ interoperability code</p>
+<ul>
+<li><p>hello.cc</p>
+<pre><code>#include &lt;pthread.h&gt;
+#include &lt;iostream&gt;
+
+extern &quot;C&quot;
+{
+    extern int js_func();
+
+    void* test(void*)
+    {
+        std::cout &lt;&lt; &quot;Background thread&quot; &lt;&lt; std::endl;
+        std::cout &lt;&lt; js_func() &lt;&lt; std::endl;
+        return NULL;
+    }
+
+    void cpp_func()
+    {
+        pthread_t t;
+        pthread_create(&amp;t, NULL, &amp;test, NULL);
+        std::cout &lt;&lt; &quot;Main thread&quot; &lt;&lt; std::endl;
+    }
+}
+</code></pre></li>
+<li><p>hello.js</p>
+<pre><code>Module.onRuntimeInitialized = () =&gt; {
+    const cpp_func = Module.cwrap(&apos;cpp_func&apos;, null);
+    cpp_func();
+};
+</code></pre></li>
+<li><p>hello.html</p>
+<pre><code>&lt;!DOCTYPE html&gt;
+&lt;html lang=&quot;en&quot;&gt;
+&lt;head&gt;
+    &lt;meta charset=&quot;UTF-8&quot;&gt;
+    &lt;meta name=&quot;viewport&quot; content=&quot;width=device-width, initial-scale=1.0&quot;&gt;
+    &lt;meta http-equiv=&quot;X-UA-Compatible&quot; content=&quot;ie=edge&quot;&gt;
+    &lt;title&gt;Document&lt;/title&gt;
+&lt;/head&gt;
+&lt;body&gt;
+    &lt;script src=&quot;wasm.js&quot;&gt;&lt;/script&gt;
+    &lt;script src=&quot;hello.js&quot;&gt;&lt;/script&gt;
+&lt;/body&gt;
+&lt;/html&gt;
+</code></pre></li>
+<li><p>export.js</p>
+<pre><code>mergeInto(LibraryManager.library, {
+    js_func: function () {
+        return 10;
+    },
+});
+</code></pre></li>
+<li><p>Build</p>
+<pre><code>emcc hello.cc -o wasm.js -s EXPORTED_FUNCTIONS=&apos;[&quot;_cpp_func&quot;]&apos; -s EXTRA_EXPORTED_RUNTIME_METHODS=&apos;[&quot;cwrap&quot;]&apos; --js-library export.js -std=c++14 -s USE_PTHREADS=1 -s PTHREAD_POOL_SIZE=2 -g4
+</code></pre><p>Build完之后会生成<code>wasm.js</code>和<code>wasm.wasm</code>，其中<code>wasm.js</code>已经在<code>hello.html</code>中被引用，<code>wasm.wasm</code>会在<code>wasm.js</code>中被<code>fetch</code>, <code>compile</code> and <code>instantiate</code></p>
 </li>
-<li>本文列举了在进行包优化的过程中所使用的一些方法/工具，其中效果显著的步骤<strong>加粗</strong>显示 （主要是清除多余文件/资源，动态库转静态库)</li>
-<li>原文以英文内部邮件的形式发出，这里将原文脱密后附录如下</li>
-</ol>
-<h2 id="Why-app-size-matters"><a href="#Why-app-size-matters" class="headerlink" title="Why app size matters?"></a>Why app size matters?</h2><ol>
-<li>Apple App store cellular download limit is 150 MB, which means app with compressed size over that limit can only be downloaded in WIFI environment</li>
-<li>Data from Google play, for every 6 MB increase to app size, we see a decrease in the install conversion rate of 1%: <a href="https://medium.com/googleplaydev/shrinking-apks-growing-installs-5d3fcba23ce2" target="_blank" rel="noopener">https://medium.com/googleplaydev/shrinking-apks-growing-installs-5d3fcba23ce2</a></li>
-</ol>
-<h2 id="What-we-have-done-to-reduce-app-size"><a href="#What-we-have-done-to-reduce-app-size" class="headerlink" title="What we have done to reduce app size?"></a>What we have done to reduce app size?</h2><h3 id="Measure-app-size"><a href="#Measure-app-size" class="headerlink" title="Measure app size"></a>Measure app size</h3><ol>
-<li>There’re two types of app size<ul>
-<li>Download size: This is the compressed size of the app downloaded over the air. This is also what we’re trying to optimize</li>
-<li>Install size: This is the amount of disk space the app will take up on the customer’s device. This is also what user sees on App store</li>
+<li><p>直接打开<code>hello.html</code>看到输出</p>
+<img src="/2019/01/09/WebAssembly/hello-output.png">
+</li>
 </ul>
-</li>
-</ol>
-<img src="/2019/01/09/App-thinning-checklist/type-of-size.png">
-<blockquote>
-<p>image source: <a href="https://stackoverflow.com/questions/35504571/is-ios-app-store-over-the-air-download-limit-based-on-download-size-or-instal" target="_blank" rel="noopener">https://stackoverflow.com/questions/35504571/is-ios-app-store-over-the-air-download-limit-based-on-download-size-or-instal</a></p>
-</blockquote>
-<ol start="2">
-<li><p>Inspect ipa files to examine the compressed size of each item in the .ipa file<br> <code>unzip -lv {app}.ipa</code></p>
-<img src="/2019/01/09/App-thinning-checklist/unzip-ipa.png">
-<blockquote>
-<p>image source: <a href="https://stackoverflow.com/questions/52422675/how-to-extract-contents-from-a-ipa-file" target="_blank" rel="noopener">https://stackoverflow.com/questions/52422675/how-to-extract-contents-from-a-ipa-file</a></p>
-</blockquote>
-</li>
-<li><p><a href="https://github.com/kobe1941/shell" target="_blank" rel="noopener">Leverage LinkMap</a> to analyze the composition of main executable file</p>
-</li>
-</ol>
-<img src="/2019/01/09/App-thinning-checklist/link-map.png">    
-<blockquote>
-<p>image source: <a href="https://github.com/kobe1941/shell" target="_blank" rel="noopener">https://github.com/kobe1941/shell</a></p>
-</blockquote>
-<h3 id="Monitor-daily-build-size-change"><a href="#Monitor-daily-build-size-change" class="headerlink" title="Monitor daily build size change"></a>Monitor daily build size change</h3><p>We have integrated our package size report into our CI and it will auto generates report and mail alert</p>
-<img src="/2019/01/09/App-thinning-checklist/package-size-report.png">
-<img src="/2019/01/09/App-thinning-checklist/package-size-report2.png">
-<h3 id="Analyze-code"><a href="#Analyze-code" class="headerlink" title="Analyze code"></a>Analyze code</h3><ol>
-<li>Ensure Xcode build setting is correctly configured<ul>
-<li>Optimization Level: Fastest, Smallest</li>
-<li>Deployment Postprocessing: Yes</li>
-<li>Strip linked Product: Yes</li>
-<li>Symbols Hidden by default: Yes</li>
-<li>Make Strings Read-only: Yes</li>
-</ul>
-</li>
-<li><strong><a href="https://github.com/tsabend/fus" target="_blank" rel="noopener">Find and remove unused class</a></strong></li>
-<li><strong><a href="https://medium.com/@gabriel_lewis/how-to-easily-find-unused-swift-code-in-xcode-159631961acf" target="_blank" rel="noopener">Find and remove unused code</a></strong></li>
-</ol>
-<h3 id="Analyze-assets"><a href="#Analyze-assets" class="headerlink" title="Analyze assets"></a>Analyze assets</h3><ol>
-<li><strong><a href="https://github.com/tinymind/LSUnusedResources" target="_blank" rel="noopener">Find and remove unused assets</a></strong></li>
-<li><a href="https://github.com/adrianlopezroche/fdupes" target="_blank" rel="noopener">Find and remove duplicate files</a></li>
-<li><strong>Remove extra fonts</strong></li>
-<li><strong>Move on-demand resources to cloud</strong></li>
-<li>Compress resources: <a href="https://imageoptim.com/mac" target="_blank" rel="noopener">Image</a>, <a href="https://ffmpeg.org" target="_blank" rel="noopener">Video/Audio</a></li>
-</ol>
-<h3 id="Analyze-dependencies"><a href="#Analyze-dependencies" class="headerlink" title="Analyze dependencies"></a>Analyze dependencies</h3><ol>
-<li><strong><a href="https://recoursive.com/2018/06/06/static_libraries_cocoapods/" target="_blank" rel="noopener">Move Cocoapods dependencies from dynamic framework to static libraries</a></strong></li>
-<li>Ensure dependencies are correctly built for release mode and resources compressed</li>
-<li>Remove unneeded dependencies</li>
-</ol>
-<h2 id="What’s-next"><a href="#What’s-next" class="headerlink" title="What’s next?"></a>What’s next?</h2><p>There’re some potential optimization methods which need more efforts, we’re actively evaluating their feasibilities</p>
+<h2 id="坑"><a href="#坑" class="headerlink" title="坑"></a>坑</h2><p>目前踩到的一些<strong>比较棘手</strong>的坑（嗯小坑不断）</p>
 <ol>
-<li>Use 8-bit PNG instead of 32-bit PNG</li>
-<li>Replace small images with inline code</li>
-<li>Compress JavaScript/html</li>
-<li>Remove duplicate strings</li>
-<li>Turn off C++/Objective-C exception support in Xcode</li>
+<li><a href="https://github.com/kripken/emscripten/issues/7812" target="_blank" rel="noopener">Calling derived JavaScript object inside another thread causes binding error</a><ul>
+<li>这个是我遇到的一个比较严重的问题，简单来说就是在<code>embind</code>和<code>webidl</code>的环境下，JavaScript能够实现C++中定义的interface，但却无法在C++的multi-thread环境中被调用</li>
+<li>错误信息是JavaScript的Web workder环境无法识别<code>Module</code>中JavaScript中实现的Object</li>
+<li>debug过程中发现，multi-thread环境下生成的<code>pthread-main.js</code>(worker)中, <code>Module</code>并不包含JavaScript实现的Object，具体的重现过程可以参考我在上面链接中的提出的issue</li>
+<li>绕过这个坑的方法：目前使用纯C的接口可以绕过这个，当然不可避免的损失了C++ class的一些便利性</li>
+</ul>
+</li>
+<li><a href="https://github.com/kripken/emscripten/issues/6362#issuecomment-380577403" target="_blank" rel="noopener">embind not maintained</a>?</li>
 </ol>
+<h2 id="Reference"><a href="#Reference" class="headerlink" title="Reference"></a>Reference</h2><ul>
+<li><a href="http://kripken.github.io/emscripten-site/docs/site/glossary.html" target="_blank" rel="noopener">Glossary</a></li>
+<li><a href="https://github.com/kripken/emscripten/issues" target="_blank" rel="noopener">Emscripten issues</a></li>
+<li><a href="http://kripken.github.io/emscripten-site/docs/porting/connecting_cpp_and_javascript/WebIDL-Binder.html" target="_blank" rel="noopener">WebIDL</a></li>
+<li><a href="http://kripken.github.io/emscripten-site/docs/porting/connecting_cpp_and_javascript/embind.html" target="_blank" rel="noopener">Embind</a></li>
+<li>Test suite: <ul>
+<li><a href="https://github.com/kripken/emscripten/tree/master/tests/embind" target="_blank" rel="noopener">Embind</a></li>
+<li><a href="https://github.com/kripken/emscripten/tree/master/tests/webidl" target="_blank" rel="noopener">Webidl</a></li>
+</ul>
+</li>
+<li><a href="https://medium.com/@c.gerard.gallant/webassembly-web-workers-f2ba637c3e4a" target="_blank" rel="noopener">WebAssembly + Web worker</a></li>
+<li><a href="https://developer.mozilla.org/en-US/docs/Web/API/Web_Workers_API/Using_web_workers" target="_blank" rel="noopener">WebWorker</a></li>
+<li>Big projects:<ul>
+<li><a href="https://github.com/kripken/box2d.js" target="_blank" rel="noopener">Box2d.js</a> (webidl)</li>
+<li><a href="https://github.com/ucisysarch/opencvjs" target="_blank" rel="noopener">OpenCV.js</a> (embind)</li>
+</ul>
+</li>
+</ul>
 
       
     </div>
@@ -434,9 +484,7 @@
       
         <div class="post-tags">
           
-            <a href="/tags/iOS/" rel="tag">#iOS</a>
-          
-            <a href="/tags/Performance/" rel="tag">#Performance</a>
+            <a href="/tags/WebAssembly/" rel="tag">#WebAssembly</a>
           
         </div>
       
@@ -445,17 +493,13 @@
         <div class="post-nav">
           <div class="post-nav-next post-nav-item">
             
-              <a href="/2016/02/17/Build-and-Install-Hadoop-2-7-2-on-Windows/" rel="next" title="Build and Install Hadoop 2.7.2 on Windows">
-                <i class="fa fa-chevron-left"></i> Build and Install Hadoop 2.7.2 on Windows
+              <a href="/2019/01/09/App-thinning-checklist/" rel="next" title="App thinning checklist">
+                <i class="fa fa-chevron-left"></i> App thinning checklist
               </a>
             
           </div>
 
           <div class="post-nav-prev post-nav-item">
-            
-              <a href="/2019/01/09/WebAssembly/" rel="prev" title="WebAssembly">
-                WebAssembly <i class="fa fa-chevron-right"></i>
-              </a>
             
           </div>
         </div>
@@ -481,7 +525,7 @@
           
   <div class="comments" id="comments">
     
-      <div class="ds-thread" data-thread-key="2019/01/09/App-thinning-checklist/" data-title="App thinning checklist" data-url="http://yoursite.com/2019/01/09/App-thinning-checklist/">
+      <div class="ds-thread" data-thread-key="2019/01/09/WebAssembly/" data-title="WebAssembly" data-url="http://yoursite.com/2019/01/09/WebAssembly/">
       </div>
     
   </div>
@@ -624,7 +668,7 @@
               
             
             
-              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#TL-DR"><span class="nav-number">1.</span> <span class="nav-text">TL;DR</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Why-app-size-matters"><span class="nav-number">2.</span> <span class="nav-text">Why app size matters?</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#What-we-have-done-to-reduce-app-size"><span class="nav-number">3.</span> <span class="nav-text">What we have done to reduce app size?</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#Measure-app-size"><span class="nav-number">3.1.</span> <span class="nav-text">Measure app size</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Monitor-daily-build-size-change"><span class="nav-number">3.2.</span> <span class="nav-text">Monitor daily build size change</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Analyze-code"><span class="nav-number">3.3.</span> <span class="nav-text">Analyze code</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Analyze-assets"><span class="nav-number">3.4.</span> <span class="nav-text">Analyze assets</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Analyze-dependencies"><span class="nav-number">3.5.</span> <span class="nav-text">Analyze dependencies</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#What’s-next"><span class="nav-number">4.</span> <span class="nav-text">What’s next?</span></a></li></ol></div>
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#Glossary"><span class="nav-number">1.</span> <span class="nav-text">Glossary</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Browser-compatibility"><span class="nav-number">2.</span> <span class="nav-text">Browser compatibility</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Setup"><span class="nav-number">3.</span> <span class="nav-text">Setup</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#坑"><span class="nav-number">4.</span> <span class="nav-text">坑</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Reference"><span class="nav-number">5.</span> <span class="nav-text">Reference</span></a></li></ol></div>
             
           </div>
         </section>
