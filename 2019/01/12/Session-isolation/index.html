@@ -1,0 +1,852 @@
+<!doctype html>
+
+
+
+  
+
+
+<html class="theme-next muse use-motion">
+<head><meta name="generator" content="Hexo 3.8.0">
+  <meta charset="UTF-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+
+
+
+<meta http-equiv="Cache-Control" content="no-transform">
+<meta http-equiv="Cache-Control" content="no-siteapp">
+
+
+
+  <meta name="google-site-verification" content="QHo_uAQNF25sO_n-1pHPXsK_HaJDygjK9S7WxK644nI">
+
+
+
+
+
+
+
+
+
+
+  
+  
+  <link href="/vendors/fancybox/source/jquery.fancybox.css?v=2.1.5" rel="stylesheet" type="text/css">
+
+
+
+
+  
+  
+  
+  
+
+  
+    
+    
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+    
+    
+    <link href="//fonts.googleapis.com/css?family=Lato:300,300italic,400,400italic,700,700italic&subset=latin,latin-ext" rel="stylesheet" type="text/css">
+  
+
+
+
+
+
+
+<link href="/vendors/font-awesome/css/font-awesome.min.css?v=4.4.0" rel="stylesheet" type="text/css">
+
+<link href="/css/main.css?v=5.0.1" rel="stylesheet" type="text/css">
+
+
+  <meta name="keywords" content="iOS,">
+
+
+
+
+
+  <link rel="alternate" href="/atom.xml" title="非常大人" type="application/atom+xml">
+
+
+
+
+  <link rel="shortcut icon" type="image/x-icon" href="/favicon.ico?v=5.0.1">
+
+
+
+
+
+
+<meta name="description" content="本文总结了在实现不同WKWebView实例之间浏览状态隔离过程中所踩的一些坑，同时给出了一套可行的解决方案。">
+<meta name="keywords" content="iOS">
+<meta property="og:type" content="article">
+<meta property="og:title" content="不同WKWebView之间实现浏览状态隔离">
+<meta property="og:url" content="http://yoursite.com/2019/01/12/Session-isolation/index.html">
+<meta property="og:site_name" content="非常大人">
+<meta property="og:description" content="本文总结了在实现不同WKWebView实例之间浏览状态隔离过程中所踩的一些坑，同时给出了一套可行的解决方案。">
+<meta property="og:locale" content="zh-Hans">
+<meta property="og:image" content="http://yoursite.com/2019/01/12/Session-isolation/sample-app.png">
+<meta property="og:image" content="http://yoursite.com/2019/01/12/Session-isolation/keep-me-signed-in.png">
+<meta property="og:image" content="http://yoursite.com/2019/01/12/Session-isolation/cookies-in-file-system.png">
+<meta property="og:image" content="http://yoursite.com/2019/01/12/Session-isolation/but.jpg">
+<meta property="og:image" content="http://yoursite.com/2019/01/12/Session-isolation/stackoverflow.jpg">
+<meta property="og:image" content="http://yoursite.com/2019/01/12/Session-isolation/happy.jpg">
+<meta property="og:updated_time" content="2019-01-12T10:01:46.975Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="不同WKWebView之间实现浏览状态隔离">
+<meta name="twitter:description" content="本文总结了在实现不同WKWebView实例之间浏览状态隔离过程中所踩的一些坑，同时给出了一套可行的解决方案。">
+<meta name="twitter:image" content="http://yoursite.com/2019/01/12/Session-isolation/sample-app.png">
+
+
+
+<script type="text/javascript" id="hexo.configuration">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    scheme: 'Muse',
+    sidebar: {"position":"left","display":"post"},
+    fancybox: true,
+    motion: true,
+    duoshuo: {
+      userId: 0,
+      author: '博主'
+    }
+  };
+</script>
+
+  <title> 不同WKWebView之间实现浏览状态隔离 | 非常大人 </title>
+</head>
+
+<body itemscope="" itemtype="http://schema.org/WebPage" lang="zh-Hans">
+
+  
+
+
+<script>
+  (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+            (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+          m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+  })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+  ga('create', 'UA-72599339-1', 'auto');
+  ga('send', 'pageview');
+</script>
+
+
+
+
+
+
+
+
+
+  
+  
+    
+  
+
+  <div class="container one-collumn sidebar-position-left page-post-detail ">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope="" itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-meta ">
+  
+
+  <div class="custom-logo-site-title">
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <span class="site-title">非常大人</span>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+  </div>
+  <p class="site-subtitle"></p>
+</div>
+
+<div class="site-nav-toggle">
+  <button>
+    <span class="btn-bar"></span>
+    <span class="btn-bar"></span>
+    <span class="btn-bar"></span>
+  </button>
+</div>
+
+<nav class="site-nav">
+  
+
+  
+    <ul id="menu" class="menu">
+      
+        
+        <li class="menu-item menu-item-home">
+          <a href="/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-home"></i> <br>
+            
+            首页
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-categories">
+          <a href="/categories" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-th"></i> <br>
+            
+            分类
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-about">
+          <a href="/about" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-user"></i> <br>
+            
+            关于
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/archives" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-archive"></i> <br>
+            
+            归档
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-tags">
+          <a href="/tags" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-tags"></i> <br>
+            
+            标签
+          </a>
+        </li>
+      
+
+      
+    </ul>
+  
+
+  
+</nav>
+
+ </div>
+    </header>
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal " itemscope="" itemtype="http://schema.org/Article">
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+            
+            
+              
+                不同WKWebView之间实现浏览状态隔离
+              
+            
+          </h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            <span class="post-meta-item-icon">
+              <i class="fa fa-calendar-o"></i>
+            </span>
+            <span class="post-meta-item-text">发表于</span>
+            <time itemprop="dateCreated" datetime="2019-01-12T14:35:23+08:00" content="2019-01-12">
+              2019-01-12
+            </time>
+          </span>
+
+          
+            <span class="post-category">
+              &nbsp; | &nbsp;
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+              
+                <span itemprop="about" itemscope="" itemtype="https://schema.org/Thing">
+                  <a href="/categories/iOS/" itemprop="url" rel="index">
+                    <span itemprop="name">iOS</span>
+                  </a>
+                </span>
+
+                
+                
+
+              
+            </span>
+          
+
+          
+            
+              <span class="post-comments-count">
+                &nbsp; | &nbsp;
+                <a href="/2019/01/12/Session-isolation/#comments" itemprop="discussionUrl">
+                  <span class="post-comments-count ds-thread-count" data-thread-key="2019/01/12/Session-isolation/" itemprop="commentsCount"></span>
+                </a>
+              </span>
+            
+          
+
+          
+
+          
+          
+
+          
+        </div>
+      </header>
+    
+
+
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <p>项目中用到了<code>WKWebView</code>来渲染网页，有一个需求是在不同的账号下希望实现浏览状态隔离，如何实现呢？</p>
+<h2 id="Sample-app"><a href="#Sample-app" class="headerlink" title="Sample app"></a>Sample app</h2><p>下图是我们用来测试的sample app, 两个tab分别有两个不同的<code>WKWebView</code>实例，每次用户切换tab的时候，对应的tab会刷新对<code>https://login.live.com</code>这个地址的访问。</p>
+<img src="/2019/01/12/Session-isolation/sample-app.png">
+<h2 id="问题"><a href="#问题" class="headerlink" title="问题"></a>问题</h2><ol>
+<li>默认状态下，不同的<code>WKWebView</code>实例是不会共享浏览状态的，因此我们可以在两个tab登录不同的账号，切换tab的时候对应的登录状态不会乱掉</li>
+<li>但是如果我们在其中一个tab网页登录的时候选择<code>Keep me signed in</code>，奇怪的事情发生了，当切换到另一个tab的时候，发现另一个tab竟然也处于登录的状态<img src="/2019/01/12/Session-isolation/keep-me-signed-in.png">
+</li>
+</ol>
+<h2 id="原因"><a href="#原因" class="headerlink" title="原因"></a>原因</h2><ol>
+<li>勾选<code>Keep me signed in</code>的时候发生了什么？<br>登录状态的保持需要客户端保存cookie，而我们知道cookie是分<a href="https://en.wikipedia.org/wiki/HTTP_cookie#Session_cookie" target="_blank" rel="noopener">session cookie</a>和<a href="https://en.wikipedia.org/wiki/HTTP_cookie#Persistent_cookie" target="_blank" rel="noopener">persistent cookie</a>的，两者的区别在<code>WKWebView</code>的体现就是，前者会在<code>WKWebView</code>实例消失的时候随之消失，而后者会保存在文件系统中。当用户勾选<code>Keep me signed in</code>的时候，网页会写入某些<code>persistent cookie</code>，这样当app下次启动初始化<code>WKWebView</code>的时候，网页就能读取到这些内容保持用户的登录状态。<br>下图是app的文件系统，我们发现当勾选了<code>Keep me signed in</code>，但是人为删除<code>Cookies</code>文件时，网页的登录状态会丢失，这样也进一步验证了我们的想法（也可以打开<code>Cookies</code>文件查看内容）</li>
+</ol>
+<img src="/2019/01/12/Session-isolation/cookies-in-file-system.png">
+<ol start="2">
+<li><p>为什么默认状态下，<code>WKWebView</code>不会共享浏览状态？<br>默认状态下，不同的<code>WKWebView</code>拥有不同的<a href="https://developer.apple.com/documentation/webkit/wkwebviewconfiguration/1395659-processpool" target="_blank" rel="noopener">processPool</a>, 因此浏览状态相互之间是不会共享的。</p>
+</li>
+<li><p>为什么选择<code>Keep me signed in</code>的时候浏览状态会共享？</p>
+</li>
+</ol>
+<ul>
+<li><p>首先要介绍<a href="https://developer.apple.com/documentation/webkit/wkwebsitedatastore" target="_blank" rel="noopener">WKWebsiteDataStore</a>的概念</p>
+<blockquote>
+<p>A WKWebsiteDataStore object represents various types of data used by a chosen website. Data types include <strong>cookies</strong>, disk and memory caches, and persistent data such as WebSQL, IndexedDB databases, and local storage.</p>
+</blockquote>
+<p>iOS SDK提供了两种<code>WKWebsiteDataStore</code>, <a href="https://developer.apple.com/documentation/webkit/wkwebsitedatastore/1532937-default" target="_blank" rel="noopener">WKWebsiteDataStore.default()</a>会返回默认的, persistent dataStore，而<a href="https://developer.apple.com/documentation/webkit/wkwebsitedatastore/1532934-nonpersistent" target="_blank" rel="noopener">WKWebsiteDataStore.nonPersistent()</a>会创建一个non-persistent dataStore并返回（苹果的<a href="https://developer.apple.com/documentation/webkit/wkwebviewconfiguration/1395661-websitedatastore" target="_blank" rel="noopener">文档</a>也介绍了，这种dataStore经常被用来实现无痕浏览）。</p>
+<blockquote>
+<p>If a web view is associated with a nonpersistent data store, no data is written to the file system. This property implements <strong>private browsing</strong> in a web view.</p>
+</blockquote>
+</li>
+<li><p>默认状态下，<code>WKWebView</code>的<a href="https://developer.apple.com/documentation/webkit/wkwebviewconfiguration/1395661-websitedatastore" target="_blank" rel="noopener">websiteDataStore</a>是default版本的，也就是支持persistent cookie的dataStore</p>
+</li>
+<li>因此单纯的使用不同的<code>WKProcessPool</code>（默认行为），并不能保证浏览状态的隔离；由于默认状态下使用了相同的支持persistent cookie的<code>WKWebsiteDataStore.default()</code>，网页需要persistent的cookie会共享。</li>
+</ul>
+<h2 id="解决方法"><a href="#解决方法" class="headerlink" title="解决方法"></a>解决方法</h2><p>从上面的分析来看，解决方法看起来很直接，我们可以让不同的<code>WKWebView</code>持有不同的<code>WKWebsiteDataStore.nonPersistent()</code>实例</p>
+<pre><code>private lazy var webView: WKWebView = {
+    let config = WKWebViewConfiguration()
+    config.websiteDataStore = WKWebsiteDataStore.nonPersistent()
+    let view = WKWebView(frame: .zero, configuration: config)
+    return view
+}()
+</code></pre><p>我们发现无论是否勾选<code>Keep me signed in</code>，登录状态都不会共享，太好了！</p>
+<h2 id="但是"><a href="#但是" class="headerlink" title="但是"></a>但是</h2><img src="/2019/01/12/Session-isolation/but.jpg">
+<p>当用户勾选了<code>Keep me signed in</code>，杀掉app之后，我们发现登录状态”竟然”丢失了！这样虽然我们实现了登录状态隔离，但是<code>Keep me signed in</code>这个选项变得无用，这可不是一个专业的工程师希望看到的。而我们也知道，这也是我们采用了上述方案之后expected结果，因为<code>WKWebsiteDataStore.nonPersistent()</code>本身就是不支持persistent cookie的。</p>
+<p>我们看起来<a href="https://www.bilibili.com/video/av40176036" target="_blank" rel="noopener">进退维谷</a>（这是一个视频链接，请不要在公众场合打开 ;))</p>
+<ul>
+<li>要想实现登录状态隔离，必须使用不同的<code>WKWebsiteDataStore</code></li>
+<li>只有<code>WKWebsiteDataStore.default()</code>才能保存persistent cookie</li>
+<li>但是<code>WKWebsiteDataStore.default()</code>是一个类似单例的存在，我们无法创建不同的persistent <code>WKWebsiteDataStore</code></li>
+</ul>
+<h2 id="解决方法-1"><a href="#解决方法-1" class="headerlink" title="解决方法+1"></a>解决方法+1</h2><p>于是我们开始尝试：</p>
+<img src="/2019/01/12/Session-isolation/stackoverflow.jpg">
+<p>然后在面向StackOverflow编程无果之后，你终于意识到自己已经是有经验的工程师了，应该可以独立解决问题了，在苦思冥想之后，终于想到了下面的方法</p>
+<ul>
+<li><p>去看<a href="https://opensource.apple.com/release/ios-110.html" target="_blank" rel="noopener">Webkit</a>的源码，想办法使用私有的api</p>
+<p>在浏览<code>_WKWebsiteDataStoreConfiguration.h</code>这个文件时，我们发现如下的定义</p>
+<pre><code>#import &lt;WebKit/WKFoundation.h&gt;
+
+#if WK_API_ENABLED
+
+#import &lt;Foundation/Foundation.h&gt;
+
+NS_ASSUME_NONNULL_BEGIN
+
+WK_CLASS_AVAILABLE(macosx(WK_MAC_TBA), ios(WK_IOS_TBA))
+@interface _WKWebsiteDataStoreConfiguration : NSObject
+
+@property (nonatomic, copy, setter=_setWebStorageDirectory:) NSURL *_webStorageDirectory;
+@property (nonatomic, copy, setter=_setIndexedDBDatabaseDirectory:) NSURL *_indexedDBDatabaseDirectory;
+@property (nonatomic, copy, setter=_setWebSQLDatabaseDirectory:) NSURL *_webSQLDatabaseDirectory;
+@property (nonatomic, copy, setter=_setCookieStorageFile:) NSURL *_cookieStorageFile;
+
+@end
+
+NS_ASSUME_NONNULL_END
+
+#endif
+</code></pre><p>  于是理论上我们可以创建<code>WKWebsiteDataStoreConfiguration</code>之后，配置不同的<code>cookieStorageFile</code>路径，然后利用下面的private API，来创建不同的支持的persistent cookie的dataStore</p>
+<pre><code>@interface WKWebsiteDataStore (WKPrivate)
+
++ (NSSet&lt;NSString *&gt; *)_allWebsiteDataTypesIncludingPrivate;
+
+- (instancetype)_initWithConfiguration:(_WKWebsiteDataStoreConfiguration *)configuration WK_API_AVAILABLE(macosx(WK_MAC_TBA), ios(WK_IOS_TBA));
+</code></pre><p>  但是我们担心无法通过苹果的审核，同时这样做需要花更多的时间去看源码确保是可行的，作为一名有经验的工程师，我们认为这不是一条正路</p>
+</li>
+<li><p>终于，我们意识到，既然支持persistent cookie的本质就是把cookie保存到文件系统里，那我们能不能自己来实现呢？</p>
+<p>对于我们的sample app，我们的方案如下:</p>
+<ol>
+<li>两个<code>WebView</code>实例分别使用<code>WKWebsiteDataStore.default()</code>和<code>WKWebsiteDataStore.nonPersistent()</code></li>
+<li>对于使用<code>WKWebsiteDataStore.default()</code>的<code>WebView</code>实例，我们依靠其自身的cookie persistence机制</li>
+<li>对于使用<code>WKWebsiteDataStore.nonPersistent()</code>的<code>WebView</code>实例<ul>
+<li>在恰当的时机，读取<code>webView</code>的所有cookie并保存到文件里</li>
+<li>在初始化该<code>webView</code>的时候，读取文件中的所有cookie并加载到<code>webView</code>中</li>
+</ul>
+</li>
+</ol>
+<p>简单明了的方案，当然我们的代码也应该体现出我们的水平。</p>
+<ul>
+<li>这里我们extend了<code>WKWebsiteDataStore</code>,暴露了<code>persistCookies</code>和<code>restoreCookies</code>两个方法，暴露了<code>cookieStorageFile</code>这个属性</li>
+<li><p>sample app中使用了最简单的<code>NSKeyedArchiver</code>来实现数据持久化（要注意在操作大文件时archive/unarchive是耗时的操作，如果可能尽量放到其他线程去做；但同时cookie的读写又必须在主线程上进行）</p>
+<pre><code>struct WKWebsiteDataStoreAssociatedKeys {
+    static var cookieStorageFile: UInt8 = 0
+}
+
+extension WKWebsiteDataStore {
+    var cookieStorageFile: URL? {
+        get {
+            return objc_getAssociatedObject(self, &amp;WKWebsiteDataStoreAssociatedKeys.cookieStorageFile) as? URL
+        }
+        set {
+            objc_setAssociatedObject(self, &amp;WKWebsiteDataStoreAssociatedKeys.cookieStorageFile, newValue, .OBJC_ASSOCIATION_RETAIN)
+        }
+    }
+
+    func persistCookies() {
+        guard !self.isPersistent else {
+            return
+        }
+
+        guard let cookieStorageFilePath = self.cookieStorageFile?.path else {
+            return
+        }
+
+        self.httpCookieStore.getAllCookies { cookies in
+            NSKeyedArchiver.archiveRootObject(cookies.filter { !$0.isSessionOnly }, toFile: cookieStorageFilePath)
+        }
+    }
+
+    func restoreCookies() {
+        guard !self.isPersistent else {
+            return
+        }
+
+        guard let cookieStorageFilePath = self.cookieStorageFile?.path else {
+            return
+        }
+
+        guard let cookies = NSKeyedUnarchiver.unarchiveObject(withFile: cookieStorageFilePath) as? [HTTPCookie] else {
+            return
+        }
+
+        cookies.forEach { cookie in
+            self.httpCookieStore.setCookie(cookie, completionHandler: nil)
+        }
+    }
+}
+</code></pre></li>
+<li><p>在使用的时候，只要给<code>webSiteDataStore</code>设置<code>cookieStorageFile</code>并且在合适的时机调用<code>restoreCookies</code>和<code>persistCookies</code>即可。</p>
+</li>
+</ul>
+</li>
+</ul>
+<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>于是，我们设计的这套方案，”完美”(作为一名有经验的工程师，我们知道后续还会有各种各样奇奇怪怪的问题/需求出现）的解决了</p>
+<ul>
+<li>不同的<code>WebView</code>之间浏览状态隔离</li>
+<li>Persistent cookie能够正常工作</li>
+<li>该方案可以简单的推广到N(N&gt;2)个<code>WebView</code>的情况，只需设置不同的<code>WKWebsiteDataStore.nonPersistent()</code>和<code>cookieStorageFile</code>即可</li>
+</ul>
+<p>终于，我们有时间感慨，今晚的月色真美啊！</p>
+<img src="/2019/01/12/Session-isolation/happy.jpg">
+      
+    </div>
+
+    <div>
+      
+        
+      
+    </div>
+
+    <div>
+      
+        
+
+      
+    </div>
+
+    <footer class="post-footer">
+      
+        <div class="post-tags">
+          
+            <a href="/tags/iOS/" rel="tag">#iOS</a>
+          
+        </div>
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/2019/01/09/WebAssembly/" rel="next" title="WebAssembly">
+                <i class="fa fa-chevron-left"></i> WebAssembly
+              </a>
+            
+          </div>
+
+          <div class="post-nav-prev post-nav-item">
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </article>
+
+
+
+    <div class="post-spread">
+      
+    </div>
+  </div>
+
+
+          </div>
+          
+
+
+          
+  <div class="comments" id="comments">
+    
+      <div class="ds-thread" data-thread-key="2019/01/12/Session-isolation/" data-title="不同WKWebView之间实现浏览状态隔离" data-url="http://yoursite.com/2019/01/12/Session-isolation/">
+      </div>
+    
+  </div>
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap">
+            文章目录
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview">
+            站点概览
+          </li>
+        </ul>
+      
+
+      <section class="site-overview sidebar-panel ">
+        <div class="site-author motion-element" itemprop="author" itemscope="" itemtype="http://schema.org/Person">
+          <img class="site-author-image" itemprop="image" src="/uploads/avatar.png" alt="VeryBigMan">
+          <p class="site-author-name" itemprop="name">VeryBigMan</p>
+          <p class="site-description motion-element" itemprop="description">Does “every rule has exceptions” have exceptions?</p>
+        </div>
+        <nav class="site-state motion-element">
+          <div class="site-state-item site-state-posts">
+            <a href="/archives">
+              <span class="site-state-item-count">4</span>
+              <span class="site-state-item-name">日志</span>
+            </a>
+          </div>
+
+          
+            <div class="site-state-item site-state-categories">
+              <a href="/categories">
+                <span class="site-state-item-count">3</span>
+                <span class="site-state-item-name">分类</span>
+              </a>
+            </div>
+          
+
+          
+            <div class="site-state-item site-state-tags">
+              <a href="/tags">
+                <span class="site-state-item-count">4</span>
+                <span class="site-state-item-name">标签</span>
+              </a>
+            </div>
+          
+
+        </nav>
+
+        
+          <div class="feed-link motion-element">
+            <a href="/atom.xml" rel="alternate">
+              <i class="fa fa-rss"></i>
+              RSS
+            </a>
+          </div>
+        
+
+        <div class="links-of-author motion-element">
+          
+            
+              <span class="links-of-author-item">
+                <a href="http://stackoverflow.com/users/5741762/haibara-ai" target="_blank" title="StackOverFlow">
+                  
+                    <i class="fa fa-fw fa-stack-overflow"></i>
+                  
+                  StackOverFlow
+                </a>
+              </span>
+            
+              <span class="links-of-author-item">
+                <a href="https://github.com/yajiex" target="_blank" title="GitHub">
+                  
+                    <i class="fa fa-fw fa-github"></i>
+                  
+                  GitHub
+                </a>
+              </span>
+            
+              <span class="links-of-author-item">
+                <a href="https://leetcode.oldoldb.com" target="_blank" title="LeetCode">
+                  
+                    <i class="fa fa-fw fa-globe"></i>
+                  
+                  LeetCode
+                </a>
+              </span>
+            
+              <span class="links-of-author-item">
+                <a href="http://weibo.com/oldoldb" target="_blank" title="Weibo">
+                  
+                    <i class="fa fa-fw fa-weibo"></i>
+                  
+                  Weibo
+                </a>
+              </span>
+            
+              <span class="links-of-author-item">
+                <a href="http://douban.com/people/oldoldb" target="_blank" title="DouBan">
+                  
+                    <i class="fa fa-fw fa-globe"></i>
+                  
+                  DouBan
+                </a>
+              </span>
+            
+          
+        </div>
+        
+        
+        
+
+        
+        
+
+      </section>
+
+      
+        <section class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+            
+              
+            
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#Sample-app"><span class="nav-number">1.</span> <span class="nav-text">Sample app</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#问题"><span class="nav-number">2.</span> <span class="nav-text">问题</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#原因"><span class="nav-number">3.</span> <span class="nav-text">原因</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#解决方法"><span class="nav-number">4.</span> <span class="nav-text">解决方法</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#但是"><span class="nav-number">5.</span> <span class="nav-text">但是</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#解决方法-1"><span class="nav-number">6.</span> <span class="nav-text">解决方法+1</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#总结"><span class="nav-number">7.</span> <span class="nav-text">总结</span></a></li></ol></div>
+            
+          </div>
+        </section>
+      
+
+    </div>
+  </aside>
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright">
+  
+  &copy;  2015 - 
+  <span itemprop="copyrightYear">2019</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">VeryBigMan</span>
+</div>
+
+<div class="powered-by">
+  由 <a class="theme-link" href="http://hexo.io">Hexo</a> 强力驱动
+</div>
+
+<div class="theme-info">
+  主题 -
+  <a class="theme-link" href="https://github.com/iissnan/hexo-theme-next">
+    NexT.Muse
+  </a>
+</div>
+
+        
+
+        
+      </div>
+    </footer>
+
+    <div class="back-to-top">
+      <i class="fa fa-arrow-up"></i>
+    </div>
+  </div>
+
+  
+
+<script type="text/javascript">
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+
+
+
+
+  
+
+
+
+  
+  <script type="text/javascript" src="/vendors/jquery/index.js?v=2.1.3"></script>
+
+  
+  <script type="text/javascript" src="/vendors/fastclick/lib/fastclick.min.js?v=1.0.6"></script>
+
+  
+  <script type="text/javascript" src="/vendors/jquery_lazyload/jquery.lazyload.js?v=1.9.7"></script>
+
+  
+  <script type="text/javascript" src="/vendors/velocity/velocity.min.js?v=1.2.1"></script>
+
+  
+  <script type="text/javascript" src="/vendors/velocity/velocity.ui.min.js?v=1.2.1"></script>
+
+  
+  <script type="text/javascript" src="/vendors/fancybox/source/jquery.fancybox.pack.js?v=2.1.5"></script>
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/utils.js?v=5.0.1"></script>
+
+  <script type="text/javascript" src="/js/src/motion.js?v=5.0.1"></script>
+
+
+
+  
+  
+
+  
+  <script type="text/javascript" src="/js/src/scrollspy.js?v=5.0.1"></script>
+<script type="text/javascript" src="/js/src/post-details.js?v=5.0.1"></script>
+
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/bootstrap.js?v=5.0.1"></script>
+
+
+
+  
+
+  
+    
+  
+
+  <script type="text/javascript">
+    var duoshuoQuery = {short_name:"oldoldb"};
+    (function() {
+      var ds = document.createElement('script');
+      ds.type = 'text/javascript';ds.async = true;
+      ds.id = 'duoshuo-script';
+      ds.src = (document.location.protocol == 'https:' ? 'https:' : 'http:') + '//static.duoshuo.com/embed.js';
+      ds.charset = 'UTF-8';
+      (document.getElementsByTagName('head')[0]
+      || document.getElementsByTagName('body')[0]).appendChild(ds);
+    })();
+  </script>
+
+  
+    
+  
+
+
+
+
+
+  
+  
+  
+
+  
+
+  
+
+</body>
+</html>
