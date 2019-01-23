@@ -97,7 +97,7 @@
 <meta property="og:description" content="本文对如何实现恢复WKWebView浏览历史进行了总结与探索，同时对Firefox的具体实现进行了分析。">
 <meta property="og:locale" content="zh-Hans">
 <meta property="og:image" content="http://yoursite.com/2019/01/16/Session-restoration/sample.png">
-<meta property="og:updated_time" content="2019-01-23T10:45:18.513Z">
+<meta property="og:updated_time" content="2019-01-23T10:48:36.098Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="WKWebView实现浏览历史恢复">
 <meta name="twitter:description" content="本文对如何实现恢复WKWebView浏览历史进行了总结与探索，同时对Firefox的具体实现进行了分析。">
@@ -431,6 +431,7 @@
 <h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><ol>
 <li><code>WKWebView</code>的<code>backForwardList</code>是只读的，这一点限制了我们对浏览历史进行恢复操作</li>
 <li>Firefox的做法通过HTML提供的<a href="https://developer.mozilla.org/en-US/docs/Web/API/History_API" target="_blank" rel="noopener"><code>pushState</code></a>接口，绕过了这个限制，从另一个角度修改了<code>backForwardList</code></li>
+<li>刚刚发现<a href="https://github.com/mozilla-mobile/firefox-ios/blob/master/Client/Assets/SessionRestore.html" target="_blank" rel="noopener">Firefox最新的code</a>对这部分进行了一些修改，但是换汤不换药，思路还是一致的</li>
 <li>除了这个方法，或许（肯定）还会有其他的方法，我们之后再来讨论。</li>
 </ol>
 
