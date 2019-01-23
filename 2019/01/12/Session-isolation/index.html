@@ -102,7 +102,7 @@
 <meta property="og:image" content="http://yoursite.com/2019/01/12/Session-isolation/but.jpg">
 <meta property="og:image" content="http://yoursite.com/2019/01/12/Session-isolation/stackoverflow.jpg">
 <meta property="og:image" content="http://yoursite.com/2019/01/12/Session-isolation/happy.jpg">
-<meta property="og:updated_time" content="2019-01-12T10:01:46.975Z">
+<meta property="og:updated_time" content="2019-01-23T10:23:23.512Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="不同WKWebView之间实现浏览状态隔离">
 <meta name="twitter:description" content="本文总结了在实现不同WKWebView实例之间浏览状态隔离过程中所踩的一些坑，同时给出了一套可行的解决方案。">
@@ -371,14 +371,8 @@
 </li>
 <li>因此单纯的使用不同的<code>WKProcessPool</code>（默认行为），并不能保证浏览状态的隔离；由于默认状态下使用了相同的支持persistent cookie的<code>WKWebsiteDataStore.default()</code>，网页需要persistent的cookie会共享。</li>
 </ul>
-<h2 id="解决方法"><a href="#解决方法" class="headerlink" title="解决方法"></a>解决方法</h2><p>从上面的分析来看，解决方法看起来很直接，我们可以让不同的<code>WKWebView</code>持有不同的<code>WKWebsiteDataStore.nonPersistent()</code>实例</p>
-<pre><code>private lazy var webView: WKWebView = {
-    let config = WKWebViewConfiguration()
-    config.websiteDataStore = WKWebsiteDataStore.nonPersistent()
-    let view = WKWebView(frame: .zero, configuration: config)
-    return view
-}()
-</code></pre><p>我们发现无论是否勾选<code>Keep me signed in</code>，登录状态都不会共享，太好了！</p>
+<h2 id="解决方法"><a href="#解决方法" class="headerlink" title="解决方法"></a>解决方法</h2><p>从上面的分析来看，解决方法看起来很直接，我们可以让不同的<code>WKWebView</code>持有不同的<code>WKWebsiteDataStore.nonPersistent()</code>实例<br><figure class="highlight swift"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">private</span> <span class="built_in">lazy</span> <span class="keyword">var</span> webView: <span class="type">WKWebView</span> = &#123;</span><br><span class="line">    <span class="keyword">let</span> config = <span class="type">WKWebViewConfiguration</span>()</span><br><span class="line">    config.websiteDataStore = <span class="type">WKWebsiteDataStore</span>.nonPersistent()</span><br><span class="line">    <span class="keyword">let</span> view = <span class="type">WKWebView</span>(frame: .zero, configuration: config)</span><br><span class="line">    <span class="keyword">return</span> view</span><br><span class="line">&#125;()</span><br></pre></td></tr></table></figure></p>
+<p>我们发现无论是否勾选<code>Keep me signed in</code>，登录状态都不会共享，太好了！</p>
 <h2 id="但是"><a href="#但是" class="headerlink" title="但是"></a>但是</h2><img src="/2019/01/12/Session-isolation/but.jpg">
 <p>当用户勾选了<code>Keep me signed in</code>，杀掉app之后，我们发现登录状态”竟然”丢失了！这样虽然我们实现了登录状态隔离，但是<code>Keep me signed in</code>这个选项变得无用，这可不是一个专业的工程师希望看到的。而我们也知道，这也是我们采用了上述方案之后expected结果，因为<code>WKWebsiteDataStore.nonPersistent()</code>本身就是不支持persistent cookie的。</p>
 <p>我们看起来<a href="https://www.bilibili.com/video/av40176036" target="_blank" rel="noopener">进退维谷</a>（这是一个视频链接，请不要在公众场合打开 ;))</p>
@@ -393,34 +387,10 @@
 <ul>
 <li><p>去看<a href="https://opensource.apple.com/release/ios-110.html" target="_blank" rel="noopener">Webkit</a>的源码，想办法使用私有的api</p>
 <p>在浏览<code>_WKWebsiteDataStoreConfiguration.h</code>这个文件时，我们发现如下的定义</p>
-<pre><code>#import &lt;WebKit/WKFoundation.h&gt;
-
-#if WK_API_ENABLED
-
-#import &lt;Foundation/Foundation.h&gt;
-
-NS_ASSUME_NONNULL_BEGIN
-
-WK_CLASS_AVAILABLE(macosx(WK_MAC_TBA), ios(WK_IOS_TBA))
-@interface _WKWebsiteDataStoreConfiguration : NSObject
-
-@property (nonatomic, copy, setter=_setWebStorageDirectory:) NSURL *_webStorageDirectory;
-@property (nonatomic, copy, setter=_setIndexedDBDatabaseDirectory:) NSURL *_indexedDBDatabaseDirectory;
-@property (nonatomic, copy, setter=_setWebSQLDatabaseDirectory:) NSURL *_webSQLDatabaseDirectory;
-@property (nonatomic, copy, setter=_setCookieStorageFile:) NSURL *_cookieStorageFile;
-
-@end
-
-NS_ASSUME_NONNULL_END
-
-#endif
-</code></pre><p>  于是理论上我们可以创建<code>WKWebsiteDataStoreConfiguration</code>之后，配置不同的<code>cookieStorageFile</code>路径，然后利用下面的private API，来创建不同的支持的persistent cookie的dataStore</p>
-<pre><code>@interface WKWebsiteDataStore (WKPrivate)
-
-+ (NSSet&lt;NSString *&gt; *)_allWebsiteDataTypesIncludingPrivate;
-
-- (instancetype)_initWithConfiguration:(_WKWebsiteDataStoreConfiguration *)configuration WK_API_AVAILABLE(macosx(WK_MAC_TBA), ios(WK_IOS_TBA));
-</code></pre><p>  但是我们担心无法通过苹果的审核，同时这样做需要花更多的时间去看源码确保是可行的，作为一名有经验的工程师，我们认为这不是一条正路</p>
+<figure class="highlight objc"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#import <span class="meta-string">&lt;WebKit/WKFoundation.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="meta">#if WK_API_ENABLED</span></span><br><span class="line"></span><br><span class="line"><span class="meta">#import <span class="meta-string">&lt;Foundation/Foundation.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="built_in">NS_ASSUME_NONNULL_BEGIN</span></span><br><span class="line"></span><br><span class="line"><span class="built_in">WK_CLASS_AVAILABLE</span>(macosx(<span class="built_in">WK_MAC_TBA</span>), ios(<span class="built_in">WK_IOS_TBA</span>))</span><br><span class="line"><span class="class"><span class="keyword">@interface</span> <span class="title">_WKWebsiteDataStoreConfiguration</span> : <span class="title">NSObject</span></span></span><br><span class="line"></span><br><span class="line"><span class="keyword">@property</span> (<span class="keyword">nonatomic</span>, <span class="keyword">copy</span>, <span class="keyword">setter</span>=_setWebStorageDirectory:) <span class="built_in">NSURL</span> *_webStorageDirectory;</span><br><span class="line"><span class="keyword">@property</span> (<span class="keyword">nonatomic</span>, <span class="keyword">copy</span>, <span class="keyword">setter</span>=_setIndexedDBDatabaseDirectory:) <span class="built_in">NSURL</span> *_indexedDBDatabaseDirectory;</span><br><span class="line"><span class="keyword">@property</span> (<span class="keyword">nonatomic</span>, <span class="keyword">copy</span>, <span class="keyword">setter</span>=_setWebSQLDatabaseDirectory:) <span class="built_in">NSURL</span> *_webSQLDatabaseDirectory;</span><br><span class="line"><span class="keyword">@property</span> (<span class="keyword">nonatomic</span>, <span class="keyword">copy</span>, <span class="keyword">setter</span>=_setCookieStorageFile:) <span class="built_in">NSURL</span> *_cookieStorageFile;</span><br><span class="line"></span><br><span class="line"><span class="keyword">@end</span></span><br><span class="line"></span><br><span class="line"><span class="built_in">NS_ASSUME_NONNULL_END</span></span><br><span class="line"></span><br><span class="line"><span class="meta">#endif</span></span><br></pre></td></tr></table></figure>
+<p>  于是理论上我们可以创建<code>WKWebsiteDataStoreConfiguration</code>之后，配置不同的<code>cookieStorageFile</code>路径，然后利用下面的private API，来创建不同的支持的persistent cookie的dataStore</p>
+<figure class="highlight objc"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">@interface</span> <span class="title">WKWebsiteDataStore</span> (<span class="title">WKPrivate</span>)</span></span><br><span class="line"></span><br><span class="line">+ (<span class="built_in">NSSet</span>&lt;<span class="built_in">NSString</span> *&gt; *)_allWebsiteDataTypesIncludingPrivate;</span><br><span class="line"></span><br><span class="line">- (<span class="keyword">instancetype</span>)_initWithConfiguration:(_WKWebsiteDataStoreConfiguration *)configuration <span class="built_in">WK_API_AVAILABLE</span>(macosx(<span class="built_in">WK_MAC_TBA</span>), ios(<span class="built_in">WK_IOS_TBA</span>));</span><br></pre></td></tr></table></figure>
+<p>  但是我们担心无法通过苹果的审核，同时这样做需要花更多的时间去看源码确保是可行的，作为一名有经验的工程师，我们认为这不是一条正路</p>
 </li>
 <li><p>终于，我们意识到，既然支持persistent cookie的本质就是把cookie保存到文件系统里，那我们能不能自己来实现呢？</p>
 <p>对于我们的sample app，我们的方案如下:</p>
@@ -437,53 +407,8 @@ NS_ASSUME_NONNULL_END
 <ul>
 <li>这里我们extend了<code>WKWebsiteDataStore</code>,暴露了<code>persistCookies</code>和<code>restoreCookies</code>两个方法，暴露了<code>cookieStorageFile</code>这个属性</li>
 <li><p>sample app中使用了最简单的<code>NSKeyedArchiver</code>来实现数据持久化（要注意在操作大文件时archive/unarchive是耗时的操作，如果可能尽量放到其他线程去做；但同时cookie的读写又必须在主线程上进行）</p>
-<pre><code>struct WKWebsiteDataStoreAssociatedKeys {
-    static var cookieStorageFile: UInt8 = 0
-}
-
-extension WKWebsiteDataStore {
-    var cookieStorageFile: URL? {
-        get {
-            return objc_getAssociatedObject(self, &amp;WKWebsiteDataStoreAssociatedKeys.cookieStorageFile) as? URL
-        }
-        set {
-            objc_setAssociatedObject(self, &amp;WKWebsiteDataStoreAssociatedKeys.cookieStorageFile, newValue, .OBJC_ASSOCIATION_RETAIN)
-        }
-    }
-
-    func persistCookies() {
-        guard !self.isPersistent else {
-            return
-        }
-
-        guard let cookieStorageFilePath = self.cookieStorageFile?.path else {
-            return
-        }
-
-        self.httpCookieStore.getAllCookies { cookies in
-            NSKeyedArchiver.archiveRootObject(cookies.filter { !$0.isSessionOnly }, toFile: cookieStorageFilePath)
-        }
-    }
-
-    func restoreCookies() {
-        guard !self.isPersistent else {
-            return
-        }
-
-        guard let cookieStorageFilePath = self.cookieStorageFile?.path else {
-            return
-        }
-
-        guard let cookies = NSKeyedUnarchiver.unarchiveObject(withFile: cookieStorageFilePath) as? [HTTPCookie] else {
-            return
-        }
-
-        cookies.forEach { cookie in
-            self.httpCookieStore.setCookie(cookie, completionHandler: nil)
-        }
-    }
-}
-</code></pre></li>
+<figure class="highlight swift"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">WKWebsiteDataStoreAssociatedKeys</span> </span>&#123;</span><br><span class="line">    <span class="keyword">static</span> <span class="keyword">var</span> cookieStorageFile: <span class="type">UInt8</span> = <span class="number">0</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="class"><span class="keyword">extension</span> <span class="title">WKWebsiteDataStore</span> </span>&#123;</span><br><span class="line">    <span class="keyword">var</span> cookieStorageFile: <span class="type">URL</span>? &#123;</span><br><span class="line">        <span class="keyword">get</span> &#123;</span><br><span class="line">            <span class="keyword">return</span> objc_getAssociatedObject(<span class="keyword">self</span>, &amp;<span class="type">WKWebsiteDataStoreAssociatedKeys</span>.cookieStorageFile) <span class="keyword">as</span>? <span class="type">URL</span></span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">set</span> &#123;</span><br><span class="line">            objc_setAssociatedObject(<span class="keyword">self</span>, &amp;<span class="type">WKWebsiteDataStoreAssociatedKeys</span>.cookieStorageFile, newValue, .<span class="type">OBJC_ASSOCIATION_RETAIN</span>)</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">func</span> <span class="title">persistCookies</span><span class="params">()</span></span> &#123;</span><br><span class="line">        <span class="keyword">guard</span> !<span class="keyword">self</span>.isPersistent <span class="keyword">else</span> &#123;</span><br><span class="line">            <span class="keyword">return</span></span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        <span class="keyword">guard</span> <span class="keyword">let</span> cookieStorageFilePath = <span class="keyword">self</span>.cookieStorageFile?.path <span class="keyword">else</span> &#123;</span><br><span class="line">            <span class="keyword">return</span></span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        <span class="keyword">self</span>.httpCookieStore.getAllCookies &#123; cookies <span class="keyword">in</span></span><br><span class="line">            <span class="type">NSKeyedArchiver</span>.archiveRootObject(cookies.<span class="built_in">filter</span> &#123; !$<span class="number">0</span>.isSessionOnly &#125;, toFile: cookieStorageFilePath)</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">func</span> <span class="title">restoreCookies</span><span class="params">()</span></span> &#123;</span><br><span class="line">        <span class="keyword">guard</span> !<span class="keyword">self</span>.isPersistent <span class="keyword">else</span> &#123;</span><br><span class="line">            <span class="keyword">return</span></span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        <span class="keyword">guard</span> <span class="keyword">let</span> cookieStorageFilePath = <span class="keyword">self</span>.cookieStorageFile?.path <span class="keyword">else</span> &#123;</span><br><span class="line">            <span class="keyword">return</span></span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        <span class="keyword">guard</span> <span class="keyword">let</span> cookies = <span class="type">NSKeyedUnarchiver</span>.unarchiveObject(withFile: cookieStorageFilePath) <span class="keyword">as</span>? [<span class="type">HTTPCookie</span>] <span class="keyword">else</span> &#123;</span><br><span class="line">            <span class="keyword">return</span></span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        cookies.forEach &#123; cookie <span class="keyword">in</span></span><br><span class="line">            <span class="keyword">self</span>.httpCookieStore.setCookie(cookie, completionHandler: <span class="literal">nil</span>)</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+</li>
 <li><p>在使用的时候，只要给<code>webSiteDataStore</code>设置<code>cookieStorageFile</code>并且在合适的时机调用<code>restoreCookies</code>和<code>persistCookies</code>即可。</p>
 </li>
 </ul>
@@ -549,6 +474,10 @@ extension WKWebsiteDataStore {
           </div>
 
           <div class="post-nav-prev post-nav-item">
+            
+              <a href="/2019/01/16/Session-restoration/" rel="prev" title="WKWebView实现浏览历史恢复">
+                WKWebView实现浏览历史恢复 <i class="fa fa-chevron-right"></i>
+              </a>
             
           </div>
         </div>
@@ -617,7 +546,7 @@ extension WKWebsiteDataStore {
         <nav class="site-state motion-element">
           <div class="site-state-item site-state-posts">
             <a href="/archives">
-              <span class="site-state-item-count">4</span>
+              <span class="site-state-item-count">5</span>
               <span class="site-state-item-name">日志</span>
             </a>
           </div>

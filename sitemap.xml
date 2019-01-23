@@ -2,9 +2,16 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   
   <url>
+    <loc>http://yoursite.com/2019/01/16/Session-restoration/</loc>
+    
+    <lastmod>2019-01-23T10:45:18.513Z</lastmod>
+    
+  </url>
+  
+  <url>
     <loc>http://yoursite.com/2019/01/12/Session-isolation/</loc>
     
-    <lastmod>2019-01-12T10:01:46.975Z</lastmod>
+    <lastmod>2019-01-23T10:23:23.512Z</lastmod>
     
   </url>
   
