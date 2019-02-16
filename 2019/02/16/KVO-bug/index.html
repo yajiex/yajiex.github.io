@@ -70,7 +70,7 @@
 <link href="/css/main.css?v=5.0.1" rel="stylesheet" type="text/css">
 
 
-  <meta name="keywords" content="WebAssembly,">
+  <meta name="keywords" content="iOS,">
 
 
 
@@ -88,21 +88,18 @@
 
 
 
-<meta name="description" content="本文作为WebAssembly的入门文章，总结了WebAssembly的相关概念，同时列出了调研过程中踩的一些坑">
-<meta name="keywords" content="WebAssembly">
+<meta name="description" content="Swift 4引入了closure-based KVO方式，然而该方式在iOS 11以下会造成crash。本文总结了修复这一crash过程中产生的思考。">
+<meta name="keywords" content="iOS">
 <meta property="og:type" content="article">
-<meta property="og:title" content="WebAssembly">
-<meta property="og:url" content="http://yoursite.com/2019/01/09/WebAssembly/index.html">
+<meta property="og:title" content="Swift 4中KVO的bug">
+<meta property="og:url" content="http://yoursite.com/2019/02/16/KVO-bug/index.html">
 <meta property="og:site_name" content="非常大人">
-<meta property="og:description" content="本文作为WebAssembly的入门文章，总结了WebAssembly的相关概念，同时列出了调研过程中踩的一些坑">
+<meta property="og:description" content="Swift 4引入了closure-based KVO方式，然而该方式在iOS 11以下会造成crash。本文总结了修复这一crash过程中产生的思考。">
 <meta property="og:locale" content="zh-Hans">
-<meta property="og:image" content="http://yoursite.com/2019/01/09/WebAssembly/EmscriptenToolchain.png">
-<meta property="og:image" content="http://yoursite.com/2019/01/09/WebAssembly/hello-output.png">
-<meta property="og:updated_time" content="2019-01-09T09:08:39.289Z">
+<meta property="og:updated_time" content="2019-02-16T08:43:01.044Z">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:title" content="WebAssembly">
-<meta name="twitter:description" content="本文作为WebAssembly的入门文章，总结了WebAssembly的相关概念，同时列出了调研过程中踩的一些坑">
-<meta name="twitter:image" content="http://yoursite.com/2019/01/09/WebAssembly/EmscriptenToolchain.png">
+<meta name="twitter:title" content="Swift 4中KVO的bug">
+<meta name="twitter:description" content="Swift 4引入了closure-based KVO方式，然而该方式在iOS 11以下会造成crash。本文总结了修复这一crash过程中产生的思考。">
 
 
 
@@ -120,7 +117,7 @@
   };
 </script>
 
-  <title> WebAssembly | 非常大人 </title>
+  <title> Swift 4中KVO的bug | 非常大人 </title>
   <script async src="//pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
 <script>
   (adsbygoogle = window.adsbygoogle || []).push({
@@ -276,7 +273,7 @@
             
             
               
-                WebAssembly
+                Swift 4中KVO的bug
               
             
           </h1>
@@ -288,8 +285,8 @@
               <i class="fa fa-calendar-o"></i>
             </span>
             <span class="post-meta-item-text">发表于</span>
-            <time itemprop="dateCreated" datetime="2019-01-09T15:12:44+08:00" content="2019-01-09">
-              2019-01-09
+            <time itemprop="dateCreated" datetime="2019-02-16T16:30:44+08:00" content="2019-02-16">
+              2019-02-16
             </time>
           </span>
 
@@ -302,8 +299,8 @@
               <span class="post-meta-item-text">分类于</span>
               
                 <span itemprop="about" itemscope="" itemtype="https://schema.org/Thing">
-                  <a href="/categories/WebAssembly/" itemprop="url" rel="index">
-                    <span itemprop="name">WebAssembly</span>
+                  <a href="/categories/iOS/" itemprop="url" rel="index">
+                    <span itemprop="name">iOS</span>
                   </a>
                 </span>
 
@@ -318,8 +315,8 @@
             
               <span class="post-comments-count">
                 &nbsp; | &nbsp;
-                <a href="/2019/01/09/WebAssembly/#comments" itemprop="discussionUrl">
-                  <span class="post-comments-count ds-thread-count" data-thread-key="2019/01/09/WebAssembly/" itemprop="commentsCount"></span>
+                <a href="/2019/02/16/KVO-bug/#comments" itemprop="discussionUrl">
+                  <span class="post-comments-count ds-thread-count" data-thread-key="2019/02/16/KVO-bug/" itemprop="commentsCount"></span>
                 </a>
               </span>
             
@@ -342,134 +339,36 @@
       
 
       
-        <p>最近在做 <a href="https://webassembly.org" target="_blank" rel="noopener">WebAssembly</a> 相关的事情，边做边总结吧</p>
-<h2 id="Glossary"><a href="#Glossary" class="headerlink" title="Glossary"></a><a href="https://kripken.github.io/emscripten-site/docs/site/glossary.html" target="_blank" rel="noopener">Glossary</a></h2><ul>
-<li><a href="https://webassembly.org" target="_blank" rel="noopener">WebAssembly</a>: WebAssembly (abbreviated Wasm) is a binary instruction format for a stack-based virtual machine. Wasm is designed as a portable target for compilation of high-level languages like C/C++/Rust, enabling deployment on the web for client and server applications.</li>
-<li><a href="https://kripken.github.io/emscripten-site/docs/introducing_emscripten/about_emscripten.html" target="_blank" rel="noopener">emscripten</a>: Emscripten is an Open Source LLVM to JavaScript compiler.</li>
-<li><a href="https://kripken.github.io/emscripten-site/docs/tools_reference/emsdk.html#emsdk" target="_blank" rel="noopener">emsdk</a>: The Emscripten SDK (emsdk) is used to perform all SDK maintenance and can install, update, add, remove and activate SDKs and tools.</li>
-<li><a href="https://kripken.github.io/emscripten-site/docs/tools_reference/emcc.html#emccdoc" target="_blank" rel="noopener">emcc</a>: The Emscripten Compiler Frontend (emcc). Emscripten’s drop-in replacement for a compiler like <code>gcc</code>.</li>
-</ul>
-<p>我做的事情是希望在Web环境中用到C++的一个库，所以套用上面的术语，就是我会用利用<code>emsdk</code>提供的环境，使用<code>emcc</code>将<code>C++</code>编译成<code>WebAssembly</code>格式, 然后在<code>Web</code>环境中使用.</p>
-<img src="/2019/01/09/WebAssembly/EmscriptenToolchain.png">
+        <p>最近新版本上线TestFlight，发现下面这个crash突然冒了出来</p>
 <blockquote>
-<p>image source: <a href="https://kripken.github.io/emscripten-site/docs/introducing_emscripten/about_emscripten.html" target="_blank" rel="noopener">https://kripken.github.io/emscripten-site/docs/introducing_emscripten/about_emscripten.html</a></p>
+<p>*** Terminating app due to uncaught exception ‘NSInternalInconsistencyException’, reason: ‘An instance 0x of class A was deallocated while key value observers were still registered with it. Current observation info: <nskeyvalueobservationinfo 0x=""> ( &lt;NSKeyValueObservance 0x: Observer: 0x, Key path: value, Options: &lt;New: NO, Old: NO, Prior: NO&gt; Context: 0x, Property: 0x&gt;</nskeyvalueobservationinfo></p>
 </blockquote>
-<h2 id="Browser-compatibility"><a href="#Browser-compatibility" class="headerlink" title="Browser compatibility"></a>Browser compatibility</h2><p>实践中我们比较关心的关于Thread的兼容性：</p>
-<table>
-<thead>
-<tr>
-<th>Tables</th>
-<th>Available version</th>
-<th>Conditions</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>Google chrome</td>
-<td>Chrome 70</td>
-<td>Turn on experimental “WebAssembly threads support” flag</td>
-</tr>
-<tr>
-<td>Mozilla firefox</td>
-<td>Firefox nightly channel</td>
-<td>Turn on “javascript.options.shared_memory” flag</td>
-</tr>
-</tbody>
-</table>
+<p>泡上一杯上好的农夫山泉，我们开始了debug之旅。</p>
+<h2 id="分析"><a href="#分析" class="headerlink" title="分析"></a>分析</h2><ol>
+<li>从数据来看，这个crash只在iOS 11以下的设备上出现</li>
+<li><p>crash信息很清楚，<code>A was deallocated while key value observers were still registered with it</code>，下面的code可以100%复现这个问题</p>
+ <figure class="highlight swift"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">A</span>: <span class="title">NSObject</span> </span>&#123;</span><br><span class="line">    <span class="meta">@objc</span> <span class="keyword">dynamic</span> <span class="keyword">var</span> value: <span class="type">Int</span> = <span class="number">0</span></span><br><span class="line"></span><br><span class="line">    <span class="keyword">var</span> observation: <span class="type">NSKeyValueObservation</span>?</span><br><span class="line"></span><br><span class="line">    <span class="keyword">override</span> <span class="keyword">init</span>() &#123;</span><br><span class="line">        <span class="keyword">super</span>.<span class="keyword">init</span>()</span><br><span class="line">    </span><br><span class="line">        <span class="comment">// Crash</span></span><br><span class="line">        <span class="keyword">self</span>.observation = <span class="keyword">self</span>.observe(\<span class="type">A</span>.value, options: [.new], changeHandler: &#123; (<span class="number">_</span>, change) <span class="keyword">in</span></span><br><span class="line">        </span><br><span class="line">        &#125;)</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">var</span> a: <span class="type">A</span>? = <span class="type">A</span>()</span><br><span class="line">a = <span class="literal">nil</span></span><br></pre></td></tr></table></figure>
+<p>code很简单，我们用Swift 4的新KVO语法去observe A上面的一个属性。通过<code>a = nil</code>强制释放，我们得到了相同的crash</p>
+</li>
+<li><p>Google之后，发现这是一个已知的iOS 11以下的bug: <a href="https://bugs.swift.org/browse/SR-5816" target="_blank" rel="noopener">https://bugs.swift.org/browse/SR-5816</a></p>
 <blockquote>
-<p>Emscripten has support for multithreading using the new <strong>SharedArrayBuffer</strong> capability in browsers. Note that SharedArrayBuffer was <strong>disabled</strong> by default in all major browsers on 5 January, 2018 in response to <a href="https://meltdownattack.com" target="_blank" rel="noopener">Spectre</a>. <a href="https://bugs.chromium.org/p/chromium/issues/detail?id=821270" target="_blank" rel="noopener">Chrome re-enabled it in v67</a> on platforms where its site-isolation feature is enabled to protect against Spectre-style vulnerabilities.</p>
+<p>This is happening because NSKeyValueObservation holds a weak reference to an object. That weak reference turns to nil too soon.</p>
 </blockquote>
-<h2 id="Setup"><a href="#Setup" class="headerlink" title="Setup"></a>Setup</h2><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># Get the emsdk repo</span></span><br><span class="line">git <span class="built_in">clone</span> https://github.com/juj/emsdk.git</span><br><span class="line"></span><br><span class="line"><span class="comment"># Enter that directory</span></span><br><span class="line"><span class="built_in">cd</span> emsdk</span><br><span class="line"></span><br><span class="line"><span class="comment"># Activate PATH and other environment variables in the current terminal</span></span><br><span class="line"><span class="built_in">source</span> ./emsdk_env.sh</span><br></pre></td></tr></table></figure>
-<p>Sample JavaScript-C++ interoperability code</p>
-<ul>
-<li><p>hello.cc</p>
-<pre><code>#include &lt;pthread.h&gt;
-#include &lt;iostream&gt;
-
-extern &quot;C&quot;
-{
-    extern int js_func();
-
-    void* test(void*)
-    {
-        std::cout &lt;&lt; &quot;Background thread&quot; &lt;&lt; std::endl;
-        std::cout &lt;&lt; js_func() &lt;&lt; std::endl;
-        return NULL;
-    }
-
-    void cpp_func()
-    {
-        pthread_t t;
-        pthread_create(&amp;t, NULL, &amp;test, NULL);
-        std::cout &lt;&lt; &quot;Main thread&quot; &lt;&lt; std::endl;
-    }
-}
-</code></pre></li>
-<li><p>hello.js</p>
-<pre><code>Module.onRuntimeInitialized = () =&gt; {
-    const cpp_func = Module.cwrap(&apos;cpp_func&apos;, null);
-    cpp_func();
-};
-</code></pre></li>
-<li><p>hello.html</p>
-<pre><code>&lt;!DOCTYPE html&gt;
-&lt;html lang=&quot;en&quot;&gt;
-&lt;head&gt;
-    &lt;meta charset=&quot;UTF-8&quot;&gt;
-    &lt;meta name=&quot;viewport&quot; content=&quot;width=device-width, initial-scale=1.0&quot;&gt;
-    &lt;meta http-equiv=&quot;X-UA-Compatible&quot; content=&quot;ie=edge&quot;&gt;
-    &lt;title&gt;Document&lt;/title&gt;
-&lt;/head&gt;
-&lt;body&gt;
-    &lt;script src=&quot;wasm.js&quot;&gt;&lt;/script&gt;
-    &lt;script src=&quot;hello.js&quot;&gt;&lt;/script&gt;
-&lt;/body&gt;
-&lt;/html&gt;
-</code></pre></li>
-<li><p>export.js</p>
-<pre><code>mergeInto(LibraryManager.library, {
-    js_func: function () {
-        return 10;
-    },
-});
-</code></pre></li>
-<li><p>Build</p>
-<pre><code>emcc hello.cc -o wasm.js -s EXPORTED_FUNCTIONS=&apos;[&quot;_cpp_func&quot;]&apos; -s EXTRA_EXPORTED_RUNTIME_METHODS=&apos;[&quot;cwrap&quot;]&apos; --js-library export.js -std=c++14 -s USE_PTHREADS=1 -s PTHREAD_POOL_SIZE=2 -g4
-</code></pre><p>Build完之后会生成<code>wasm.js</code>和<code>wasm.wasm</code>，其中<code>wasm.js</code>已经在<code>hello.html</code>中被引用，<code>wasm.wasm</code>会在<code>wasm.js</code>中被<code>fetch</code>, <code>compile</code> and <code>instantiate</code></p>
 </li>
-<li><p>直接打开<code>hello.html</code>看到输出</p>
-<img src="/2019/01/09/WebAssembly/hello-output.png">
-</li>
-</ul>
-<h2 id="坑"><a href="#坑" class="headerlink" title="坑"></a>坑</h2><p>目前踩到的一些<strong>比较棘手</strong>的坑（嗯小坑不断）</p>
-<ol>
-<li><a href="https://github.com/kripken/emscripten/issues/7812" target="_blank" rel="noopener">Calling derived JavaScript object inside another thread causes binding error</a><ul>
-<li>这个是我遇到的一个比较严重的问题，简单来说就是在<code>embind</code>和<code>webidl</code>的环境下，JavaScript能够实现C++中定义的interface，但却无法在C++的multi-thread环境中被调用</li>
-<li>错误信息是JavaScript的Web workder环境无法识别<code>Module</code>中JavaScript中实现的Object</li>
-<li>debug过程中发现，multi-thread环境下生成的<code>pthread-main.js</code>(worker)中, <code>Module</code>并不包含JavaScript实现的Object，具体的重现过程可以参考我在上面链接中的提出的issue</li>
-<li>绕过这个坑的方法：目前使用纯C的接口可以绕过这个，当然不可避免的损失了C++ class的一些便利性</li>
-</ul>
-</li>
-<li><a href="https://github.com/kripken/emscripten/issues/6362#issuecomment-380577403" target="_blank" rel="noopener">embind not maintained</a>?</li>
 </ol>
-<h2 id="Reference"><a href="#Reference" class="headerlink" title="Reference"></a>Reference</h2><ul>
-<li><a href="http://kripken.github.io/emscripten-site/docs/site/glossary.html" target="_blank" rel="noopener">Glossary</a></li>
-<li><a href="https://github.com/kripken/emscripten/issues" target="_blank" rel="noopener">Emscripten issues</a></li>
-<li><a href="http://kripken.github.io/emscripten-site/docs/porting/connecting_cpp_and_javascript/WebIDL-Binder.html" target="_blank" rel="noopener">WebIDL</a></li>
-<li><a href="http://kripken.github.io/emscripten-site/docs/porting/connecting_cpp_and_javascript/embind.html" target="_blank" rel="noopener">Embind</a></li>
-<li>Test suite: <ul>
-<li><a href="https://github.com/kripken/emscripten/tree/master/tests/embind" target="_blank" rel="noopener">Embind</a></li>
-<li><a href="https://github.com/kripken/emscripten/tree/master/tests/webidl" target="_blank" rel="noopener">Webidl</a></li>
-</ul>
+<h2 id="修复"><a href="#修复" class="headerlink" title="修复"></a>修复</h2><p>找到原因之后，修复变得简单，对于iOS 11以下的版本，在<code>deinit</code>的时候，我们显示的调用<code>removeObserver</code>一下</p>
+<figure class="highlight swift"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">deinit</span> &#123;</span><br><span class="line">    <span class="keyword">if</span> #available(iOS <span class="number">11.0</span>, *) &#123;</span><br><span class="line">           </span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">        <span class="keyword">if</span> <span class="keyword">let</span> observation = <span class="keyword">self</span>.observation &#123;</span><br><span class="line">            <span class="keyword">self</span>.removeObserver(observation, forKeyPath: <span class="string">"value"</span>)</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h2 id="思考"><a href="#思考" class="headerlink" title="思考"></a>思考</h2><ol>
+<li><p>为什么之前的版本没有这个问题？<br>之前的版本我们的工程师写出了下面的code</p>
+ <figure class="highlight swift"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line"><span class="keyword">self</span>.observation = <span class="keyword">self</span>.observe(\<span class="type">A</span>.value, options: [.new], changeHandler: &#123; (<span class="number">_</span>, change) <span class="keyword">in</span></span><br><span class="line">    <span class="keyword">self</span>.xxx = xxx</span><br><span class="line">&#125;)</span><br></pre></td></tr></table></figure>
+<p>上面的code是一个经典的循环引用，导致A从来不会被释放，也就从来不会触发这个crash</p>
 </li>
-<li><a href="https://medium.com/@c.gerard.gallant/webassembly-web-workers-f2ba637c3e4a" target="_blank" rel="noopener">WebAssembly + Web worker</a></li>
-<li><a href="https://developer.mozilla.org/en-US/docs/Web/API/Web_Workers_API/Using_web_workers" target="_blank" rel="noopener">WebWorker</a></li>
-<li>Big projects:<ul>
-<li><a href="https://github.com/kripken/box2d.js" target="_blank" rel="noopener">Box2d.js</a> (webidl)</li>
-<li><a href="https://github.com/ucisysarch/opencvjs" target="_blank" rel="noopener">OpenCV.js</a> (embind)</li>
-</ul>
+<li><p>项目中还有类似的下面的code，为什么不会crash？</p>
+ <figure class="highlight swift"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">A</span>: <span class="title">NSObject</span> </span>&#123;</span><br><span class="line">    <span class="meta">@objc</span> <span class="keyword">dynamic</span> <span class="keyword">var</span> value: <span class="type">Int</span> = <span class="number">0</span></span><br><span class="line"></span><br><span class="line">    <span class="keyword">var</span> observation: <span class="type">NSKeyValueObservation</span>?</span><br><span class="line"></span><br><span class="line">    <span class="keyword">let</span> b = <span class="type">B</span>()</span><br><span class="line"></span><br><span class="line">    <span class="keyword">override</span> <span class="keyword">init</span>() &#123;</span><br><span class="line">        <span class="keyword">super</span>.<span class="keyword">init</span>()</span><br><span class="line">        <span class="keyword">self</span>.observation = <span class="keyword">self</span>.b.observe(\<span class="type">B</span>.value, options: [.new], changeHandler: &#123; (<span class="number">_</span>, change) <span class="keyword">in</span></span><br><span class="line">        </span><br><span class="line">        &#125;)</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">B</span>: <span class="title">NSObject</span> </span>&#123;</span><br><span class="line">    <span class="meta">@objc</span> <span class="keyword">dynamic</span> <span class="keyword">var</span> value: <span class="type">Int</span> = <span class="number">0</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">var</span> a: <span class="type">A</span>? = <span class="type">A</span>()</span><br><span class="line">a = <span class="literal">nil</span></span><br></pre></td></tr></table></figure>
+<p>唯一的区别就是A中现在观察的对象是B上的属性，而不是A的，为什么这样不会导致crash？</p>
+<p>之前crash，调用顺序为<code>deallocate A</code> -&gt; <code>A removeObserver</code>，因此<code>A was deallocated while key value observers were still registered with it</code>；而现在这样写，调用顺序变成<code>deallocate A</code> -&gt; <code>A removeObserver</code> -&gt; <code>deallocate B</code>，B在<code>removeObserver</code>之后被<code>deallocate</code>，因此不会crash</p>
 </li>
-</ul>
+</ol>
 
       
     </div>
@@ -507,7 +406,7 @@ extern &quot;C&quot;
       
         <div class="post-tags">
           
-            <a href="/tags/WebAssembly/" rel="tag">#WebAssembly</a>
+            <a href="/tags/iOS/" rel="tag">#iOS</a>
           
         </div>
       
@@ -516,17 +415,13 @@ extern &quot;C&quot;
         <div class="post-nav">
           <div class="post-nav-next post-nav-item">
             
-              <a href="/2019/01/09/App-thinning-checklist/" rel="next" title="App thinning checklist">
-                <i class="fa fa-chevron-left"></i> App thinning checklist
+              <a href="/2019/01/16/Session-restoration/" rel="next" title="WKWebView实现浏览历史恢复">
+                <i class="fa fa-chevron-left"></i> WKWebView实现浏览历史恢复
               </a>
             
           </div>
 
           <div class="post-nav-prev post-nav-item">
-            
-              <a href="/2019/01/12/Session-isolation/" rel="prev" title="不同WKWebView之间实现浏览状态隔离">
-                不同WKWebView之间实现浏览状态隔离 <i class="fa fa-chevron-right"></i>
-              </a>
             
           </div>
         </div>
@@ -552,7 +447,7 @@ extern &quot;C&quot;
           
   <div class="comments" id="comments">
     
-      <div class="ds-thread" data-thread-key="2019/01/09/WebAssembly/" data-title="WebAssembly" data-url="http://yoursite.com/2019/01/09/WebAssembly/">
+      <div class="ds-thread" data-thread-key="2019/02/16/KVO-bug/" data-title="Swift 4中KVO的bug" data-url="http://yoursite.com/2019/02/16/KVO-bug/">
       </div>
     
   </div>
@@ -695,7 +590,7 @@ extern &quot;C&quot;
               
             
             
-              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#Glossary"><span class="nav-number">1.</span> <span class="nav-text">Glossary</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Browser-compatibility"><span class="nav-number">2.</span> <span class="nav-text">Browser compatibility</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Setup"><span class="nav-number">3.</span> <span class="nav-text">Setup</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#坑"><span class="nav-number">4.</span> <span class="nav-text">坑</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Reference"><span class="nav-number">5.</span> <span class="nav-text">Reference</span></a></li></ol></div>
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#分析"><span class="nav-number">1.</span> <span class="nav-text">分析</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#修复"><span class="nav-number">2.</span> <span class="nav-text">修复</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#思考"><span class="nav-number">3.</span> <span class="nav-text">思考</span></a></li></ol></div>
             
           </div>
         </section>
